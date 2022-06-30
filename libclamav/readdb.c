@@ -5194,6 +5194,45 @@ cl_error_t cl_statfree(struct cl_stat *dbstat)
     return CL_SUCCESS;
 }
 
+/* make sure ctx point a stack variable */
+cl_error_t cl_yr_hit_cb_ctx_free(yr_hit_ctx *ctx) {
+    if (!ctx) {
+        cli_errmsg("cl_free: yr_hit_ctx == NULL\n");
+        return CL_ENULLARG;
+    }
+    uint32_t i;
+    for (i = 0; i < ctx->hit_cnt; i++) {
+        if (ctx->hits[i] != NULL){
+            free(ctx->hits[i]);
+        }
+        ctx->hits[i] = NULL;
+    }
+    if (ctx->hits != NULL){
+        free(ctx->hits);
+        ctx->hits = NULL;
+    }
+    if (ctx) {
+        free(ctx);
+        ctx = NULL;
+    }
+    return CL_SUCCESS;
+}
+
+/* make sure ctx point init */
+yr_hit_ctx *cl_yr_hit_cb_ctx_init() {
+    yr_hit_ctx *cb_ctx             = NULL;
+
+    cb_ctx = cli_calloc(1, sizeof(yr_hit_ctx));
+    if (!cb_ctx) {
+        cli_errmsg("yr_hit_ctx: ctx allocation failed\n");
+        cb_ctx = NULL;
+        return cb_ctx;
+    }
+    cb_ctx->hit_cnt = 0;
+    cb_ctx->hits = NULL;
+    return cb_ctx;
+}
+
 cl_error_t cl_engine_free(struct cl_engine *engine)
 {
     unsigned int i, j;

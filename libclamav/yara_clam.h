@@ -205,6 +205,10 @@ typedef struct _YR_SCAN_CONTEXT
     YR_HASH_TABLE*  objects_table;
     //YR_CALLBACK_FUNC  callback;
     fmap_t * fmap;
+
+    char** hits;
+    uint32_t hit_cnt;
+    bool yr_hit;
 } YR_SCAN_CONTEXT;
 
 struct _YR_OBJECT_FUNCTION;

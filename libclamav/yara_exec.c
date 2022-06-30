@@ -113,6 +113,32 @@ function_read(int8_t)
 function_read(int16_t)
 function_read(int32_t)
 
+cl_error_t record_hit_data(YR_SCAN_CONTEXT* context, char* str_name, uint32_t realoff, uint32_t length) {
+  char* found_str = NULL;
+  char** hits_tmp = NULL;
+
+  if (NULL == context || NULL == str_name) {
+    return CL_SUCCESS;
+  }
+
+  found_str = malloc(100);
+  if (!found_str) {
+    return CL_EMEM;
+  }
+
+  snprintf(found_str, 100, "%s,%d,%d", str_name, realoff, length);
+  hits_tmp = (char**)cli_realloc(context->hits, (context->hit_cnt + 1) * sizeof(char*));
+  if (!hits_tmp) {
+    free(found_str);
+    found_str = NULL;
+    return CL_EMEM;
+  }
+  context->hits = hits_tmp;
+  context->hits[context->hit_cnt] = found_str;
+  context->hit_cnt++;
+  return CL_SUCCESS;
+}
+
 int yr_execute_code(
 #if REAL_YARA
     YR_RULES* rules,
@@ -576,6 +602,13 @@ int yr_execute_code(
         push(string->matches[tidx].tail != NULL ? 1 : 0);
 #else
         push(acdata->lsigsuboff_first[aclsig->id][string->subsig_id] != CLI_OFF_NONE ? 1 : 0);
+        if (context->yr_hit && acdata->lsigsuboff_first[aclsig->id][string->subsig_id] != CLI_OFF_NONE){
+            cl_error_t ret = record_hit_data(context, string->identifier,
+            acdata->lsigsuboff_first[aclsig->id][string->subsig_id], string->length);
+            if (ret == CL_EMEM) {
+              cli_errmsg("record_hit_data allocation failed\n");
+            }
+        }
 #endif
         break;
 
@@ -764,8 +797,16 @@ int yr_execute_code(
         {
           string = UINT64_TO_PTR(YR_STRING*, r1);
           lsig_id = string->subsig_id;
-          if (acdata->lsigsuboff_first[aclsig->id][lsig_id] != CLI_OFF_NONE)
+          if (acdata->lsigsuboff_first[aclsig->id][lsig_id] != CLI_OFF_NONE) {
             found++;
+            if (context->yr_hit){
+              cl_error_t ret = record_hit_data(context, string->identifier,
+              acdata->lsigsuboff_first[aclsig->id][string->subsig_id], string->length);
+              if (ret == CL_EMEM) {
+                cli_errmsg("record_hit_data  allocation failed\n");
+              }
+            }
+          }
           count++;
           pop(r1);
         }
