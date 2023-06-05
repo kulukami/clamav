@@ -269,7 +269,7 @@ static void *get_module_function(HMODULE handle, const char *name)
 static void *get_module_function(void *handle, const char *name)
 {
     void *procAddress = NULL;
-    procAddress = dlsym(handle, name);
+    procAddress       = dlsym(handle, name);
     if (NULL == procAddress) {
         const char *err = dlerror();
         if (NULL == err) {
@@ -1317,7 +1317,7 @@ cl_error_t cli_unlink(const char *pathname)
 
 void cli_virus_found_cb(cli_ctx *ctx, const char *virname)
 {
-    if (ctx->engine->cb_virus_found) {
+    if (ctx->engine->cb_virus_found && !(ctx->options->general & CL_SCAN_GENERAL_YARAHIT)) {
         ctx->engine->cb_virus_found(
             fmap_fd(ctx->fmap),
             virname,

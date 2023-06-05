@@ -807,7 +807,7 @@ cl_error_t cli_scan_desc(int desc, cli_ctx *ctx, cli_file_t ftype, bool filetype
                                                           TODO: This may not be needed since `emax_reached()` should've
                                                           already done that for us. */
 
-    (void)cli_recursion_stack_pop(ctx); /* Restore the parent fmap */
+    (void)cli_recursion_stack_pop(ctx);                /* Restore the parent fmap */
 
 done:
     if (NULL != new_map) {
@@ -992,7 +992,34 @@ static cl_error_t yara_eval(cli_ctx *ctx, struct cli_matcher *root, struct cli_a
             context.entry_point = target_info->exeinfo.ep;
     }
 
+    if (ctx->options->general & CL_SCAN_GENERAL_YARAHIT) {
+        context.yr_hit = 1;
+    }
     rc = yr_execute_code(ac_lsig, acdata, &context, 0, 0);
+
+    if (context.yr_hit) {
+        if (NULL != ctx->cb_ctx && rc == CL_VIRUS) {
+            struct yr_hit_cb_ctx *hit_ctx = (struct yr_hit_cb_ctx *)ctx->cb_ctx;
+            hit_ctx->hits                 = context.hits;
+            hit_ctx->hit_cnt              = context.hit_cnt;
+            uint32_t i;
+            for (i = 0; i < hit_ctx->hit_cnt; i++) {
+                cli_dbgmsg("yara_hit hit : %s\n", hit_ctx->hits[i]);
+            }
+        } else {
+            uint32_t i;
+            for (i = 0; i < context.hit_cnt; i++) {
+                if (context.hits[i] != NULL) {
+                    free(context.hits[i]);
+                }
+                context.hits[i] = NULL;
+            }
+            if (context.hits != NULL) {
+                free(context.hits);
+                context.hits = NULL;
+            }
+        }
+    }
 
     if (rc == CL_VIRUS) {
         if (ac_lsig->flag & CLI_LSIG_FLAG_PRIVATE) {

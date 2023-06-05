@@ -5575,6 +5575,47 @@ cl_error_t cl_statfree(struct cl_stat *dbstat)
     return CL_SUCCESS;
 }
 
+/* make sure ctx point a stack variable */
+cl_error_t cl_yr_hit_cb_ctx_free(yr_hit_ctx *ctx)
+{
+    if (!ctx) {
+        cli_errmsg("cl_free: yr_hit_ctx == NULL\n");
+        return CL_ENULLARG;
+    }
+    uint32_t i;
+    for (i = 0; i < ctx->hit_cnt; i++) {
+        if (ctx->hits[i] != NULL) {
+            free(ctx->hits[i]);
+        }
+        ctx->hits[i] = NULL;
+    }
+    if (ctx->hits != NULL) {
+        free(ctx->hits);
+        ctx->hits = NULL;
+    }
+    if (ctx) {
+        free(ctx);
+        ctx = NULL;
+    }
+    return CL_SUCCESS;
+}
+
+/* make sure ctx point init */
+yr_hit_ctx *cl_yr_hit_cb_ctx_init()
+{
+    yr_hit_ctx *cb_ctx = NULL;
+
+    cb_ctx = cli_calloc(1, sizeof(yr_hit_ctx));
+    if (!cb_ctx) {
+        cli_errmsg("yr_hit_ctx: ctx allocation failed\n");
+        cb_ctx = NULL;
+        return cb_ctx;
+    }
+    cb_ctx->hit_cnt = 0;
+    cb_ctx->hits    = NULL;
+    return cb_ctx;
+}
+
 cl_error_t cl_engine_free(struct cl_engine *engine)
 {
     unsigned int i, j;
@@ -5625,9 +5666,9 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         for (i = 0; i < CLI_MTARGETS; i++) {
             if ((root = engine->root[i])) {
                 if (!root->ac_only) {
-                    tasks_to_do += 1; // bm root
+                    tasks_to_do += 1;                     // bm root
                 }
-                tasks_to_do += 1; // ac root
+                tasks_to_do += 1;                         // ac root
                 if (root->ac_lsigtable) {
                     tasks_to_do += root->ac_lsigs / 1000; // every 1000 logical sigs
                     tasks_to_do += 1;                     // ac lsig table
@@ -5640,7 +5681,7 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         }
         tasks_to_do += 1; // engine root mempool
     }
-    tasks_to_do += 7; // hdb, mdb, imp, fp, crtmgr, cdb, dbinfo
+    tasks_to_do += 7;     // hdb, mdb, imp, fp, crtmgr, cdb, dbinfo
 
     if (engine->dconf) {
         if (engine->bcs.all_bcs) {
@@ -5651,14 +5692,14 @@ cl_error_t cl_engine_free(struct cl_engine *engine)
         tasks_to_do += 1; // phishing cleanup
         tasks_to_do += 1; // dconf mempool
     }
-    tasks_to_do += 7; // pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
+    tasks_to_do += 7;     // pwdbs, pua cats, iconcheck, tempdir, cache, engine, ignored
 
     if (engine->test_root) {
         root = engine->test_root;
         if (!root->ac_only) {
-            tasks_to_do += 1; // bm root
+            tasks_to_do += 1;                     // bm root
         }
-        tasks_to_do += 1; // ac root
+        tasks_to_do += 1;                         // ac root
         if (root->ac_lsigtable) {
             tasks_to_do += root->ac_lsigs / 1000; // every 1000 logical sigs
             tasks_to_do += 1;                     // ac lsig table
@@ -5941,22 +5982,22 @@ cl_error_t cl_engine_compile(struct cl_engine *engine)
 #endif
         }
     }
-    tasks_to_do += 1; // flush hdb
-    tasks_to_do += 1; // flush mdb
-    tasks_to_do += 1; // flush imp
-    tasks_to_do += 1; // flush fp
-    tasks_to_do += 1; // build allow list regex list
-    tasks_to_do += 1; // build domain list regex list
+    tasks_to_do += 1;     // flush hdb
+    tasks_to_do += 1;     // flush mdb
+    tasks_to_do += 1;     // flush imp
+    tasks_to_do += 1;     // flush fp
+    tasks_to_do += 1;     // build allow list regex list
+    tasks_to_do += 1;     // build domain list regex list
     if (engine->ignored) {
         tasks_to_do += 1; // free list of ignored sigs (no longer needed)
     }
     if (engine->test_root) {
         tasks_to_do += 1; // free test root (no longer needed)
     }
-    tasks_to_do += 1; // prepare bytecode sigs
-                      // Note: Adding a task to compile each bytecode is doable
-                      //       but would be painful to implement. For now, just
-                      //       having it all as one task should be good enough.
+    tasks_to_do += 1;     // prepare bytecode sigs
+                          // Note: Adding a task to compile each bytecode is doable
+                          //       but would be painful to implement. For now, just
+                          //       having it all as one task should be good enough.
 
     /*
      * Ok, now actually compile everything.

@@ -168,6 +168,7 @@ struct cl_scan_options {
 #define CL_SCAN_GENERAL_HEURISTICS                  0x4  /* option to enable heuristic alerts */
 #define CL_SCAN_GENERAL_HEURISTIC_PRECEDENCE        0x8  /* allow heuristic match to take precedence. */
 #define CL_SCAN_GENERAL_UNPRIVILEGED                0x10 /* scanner will not have read access to files. */
+#define CL_SCAN_GENERAL_YARAHIT                     0x20 /* scanner will report yara hitdata. */
 
 /* parsing capabilities options */
 #define CL_SCAN_PARSE_ARCHIVE                       0x1
@@ -338,6 +339,27 @@ typedef struct cli_stats_sections {
     size_t nsections;
     struct cli_section_hash *sections;
 } stats_section_t;
+
+typedef struct yr_hit_cb_ctx {
+    char** hits;
+    uint32_t hit_cnt;
+}yr_hit_ctx;
+
+/**
+ * @brief Free a yara hit data pointer.
+ *
+ * @param ctx      The hit data struct pointer.
+ * @return cl_error_t   CL_SUCCESS if successful.
+ * @return cl_error_t   CL_ENULLARG null arguments were provided.
+ */
+extern cl_error_t cl_yr_hit_cb_ctx_free(yr_hit_ctx *ctx);
+
+/**
+ * @brief Init a yara hit data pointer.
+ *
+ * @return ctx   The hit data struct pointer.
+ */
+extern yr_hit_ctx *cl_yr_hit_cb_ctx_init();
 
 /**
  * @brief Set a numerical engine option.
