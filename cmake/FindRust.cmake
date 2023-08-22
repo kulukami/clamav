@@ -294,6 +294,21 @@ function(add_rust_library)
             WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
             DEPENDS ${LIB_SOURCES}
             COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(arm64)$")
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=aarch64-apple-darwin
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
+    elseif("${CMAKE_OSX_ARCHITECTURES}" MATCHES "^(x86_64)$")
+        add_custom_command(
+            OUTPUT "${OUTPUT}"
+            COMMAND ${CMAKE_COMMAND} -E env "CARGO_CMD=build" "CARGO_TARGET_DIR=${ARGS_BINARY_DIRECTORY}" "MAINTAINER_MODE=${MAINTAINER_MODE}" "RUSTFLAGS=${RUSTFLAGS}" ${cargo_EXECUTABLE} ${MY_CARGO_ARGS} --target=x86_64-apple-darwin
+            COMMAND ${CMAKE_COMMAND} -E make_directory "${ARGS_BINARY_DIRECTORY}/${RUST_COMPILER_TARGET}/${CARGO_BUILD_TYPE}"
+            WORKING_DIRECTORY "${ARGS_SOURCE_DIRECTORY}"
+            DEPENDS ${LIB_SOURCES}
+            COMMENT "Building ${ARGS_TARGET} in ${ARGS_BINARY_DIRECTORY} with:  ${cargo_EXECUTABLE} ${MY_CARGO_ARGS_STRING}")
     else()
         add_custom_command(
             OUTPUT "${OUTPUT}"
@@ -382,10 +397,17 @@ if(RUSTC_MINIMUM_REQUIRED AND rustc_VERSION VERSION_LESS RUSTC_MINIMUM_REQUIRED)
     ${rustc_VERSION} < ${RUSTC_MINIMUM_REQUIRED}")
 endif()
 
+if(WIN32)
+    file(TOUCH ${CMAKE_BINARY_DIR}/empty-file)
+    set(EMPTY_FILE "${CMAKE_BINARY_DIR}/empty-file")
+else()
+    set(EMPTY_FILE "/dev/null")
+endif()
+
 # Determine the native libs required to link w/ rust static libs
-# message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null")
+# message(STATUS "Detecting native static libs for rust: ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}")
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs /dev/null
+    COMMAND ${CMAKE_COMMAND} -E env "CARGO_TARGET_DIR=${CMAKE_BINARY_DIR}" ${rustc_EXECUTABLE} --crate-type staticlib --print=native-static-libs ${EMPTY_FILE}
     OUTPUT_VARIABLE RUST_NATIVE_STATIC_LIBS_OUTPUT
     ERROR_VARIABLE RUST_NATIVE_STATIC_LIBS_ERROR
     RESULT_VARIABLE RUST_NATIVE_STATIC_LIBS_RESULT
