@@ -3,6 +3,13 @@
 Note: This file refers to the official packages. Things described here may
 differ slightly from third-party binary packages.
 
+## 1.1.2
+
+ClamAV 1.1.2 is a critical patch release with the following fixes:
+
+- Upgrade the bundled UnRAR library (libclamunrar) to version 6.2.10.
+  - GitHub pull request: https://github.com/Cisco-Talos/clamav/pull/1011
+
 ## 1.1.1
 
 ClamAV 1.1.1 is a critical patch release with the following fixes:
